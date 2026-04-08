@@ -1,7 +1,8 @@
-spec_version: 1
-name: AgentBox
-type: space
-runtime: fastapi
-app: server.app:app
-port: 8000
+env:
+  name: codeguard
+  version: 0.1
+
+limits:
+  max_steps: 50
+  timeout_ms: 50
 

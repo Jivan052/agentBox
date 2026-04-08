@@ -1,255 +1,98 @@
----
-title: Agentbox Environment Server
-emoji: 📠
-colorFrom: indigo
-colorTo: blue
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
-tags:
-  - openenv
+# 🧠 CodeGuard Environment
+
+## 📌 Overview
+CodeGuard is a deterministic RL-style environment for evaluating code-fixing agents.  
+It simulates tasks like lint fixing, vulnerability patching, and structural refactoring with strict reward and grading rules.
+
 ---
 
-# Agentbox Environment
+## 🧩 Environment Schema
 
-A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
-
-## Quick Start
-
-The simplest way to use the Agentbox environment is through the `AgentboxEnv` class:
-
-```python
-from AgentBox import AgentboxAction, AgentboxEnv
-
-try:
-    # Create environment from Docker image
-    AgentBoxenv = AgentboxEnv.from_docker_image("AgentBox-env:latest")
-
-    # Reset
-    result = AgentBoxenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
-
-    for msg in messages:
-        result = AgentBoxenv.step(AgentboxAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
-
-finally:
-    # Always clean up
-    AgentBoxenv.close()
+### State
+```json
+{
+	"score": "float",
+	"history": [
+		{
+			"step": "int",
+			"action": "str",
+			"reward": "float"
+		}
+	]
+}
 ```
-
-That's it! The `AgentboxEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
-
-## Building the Docker Image
-
-Before using the environment, you need to build the Docker image:
-
-```bash
-# From project root
-docker build -t AgentBox-env:latest -f server/Dockerfile .
-```
-
-## Deploying to Hugging Face Spaces
-
-You can easily deploy your OpenEnv environment to Hugging Face Spaces using the `openenv push` command:
-
-```bash
-# From the environment directory (where openenv.yaml is located)
-openenv push
-
-# Or specify options
-openenv push --namespace my-org --private
-```
-
-The `openenv push` command will:
-1. Validate that the directory is an OpenEnv environment (checks for `openenv.yaml`)
-2. Prepare a custom build for Hugging Face Docker space (enables web interface)
-3. Upload to Hugging Face (ensuring you're logged in)
-
-### Prerequisites
-
-- Authenticate with Hugging Face: The command will prompt for login if not already authenticated
-
-### Options
-
-- `--directory`, `-d`: Directory containing the OpenEnv environment (defaults to current directory)
-- `--repo-id`, `-r`: Repository ID in format 'username/repo-name' (defaults to 'username/env-name' from openenv.yaml)
-- `--base-image`, `-b`: Base Docker image to use (overrides Dockerfile FROM)
-- `--private`: Deploy the space as private (default: public)
-
-### Examples
-
-```bash
-# Push to your personal namespace (defaults to username/env-name from openenv.yaml)
-openenv push
-
-# Push to a specific repository
-openenv push --repo-id my-org/my-env
-
-# Push with a custom base image
-openenv push --base-image ghcr.io/meta-pytorch/openenv-base:latest
-
-# Push as a private space
-openenv push --private
-
-# Combine options
-openenv push --repo-id my-org/my-env --base-image custom-base:latest --private
-```
-
-After deployment, your space will be available at:
-`https://huggingface.co/spaces/<repo-id>`
-
-The deployed space includes:
-- **Web Interface** at `/web` - Interactive UI for exploring the environment
-- **API Documentation** at `/docs` - Full OpenAPI/Swagger interface
-- **Health Check** at `/health` - Container health monitoring
-- **WebSocket** at `/ws` - Persistent session endpoint for low-latency interactions
-
-## Environment Details
 
 ### Action
-**AgentboxAction**: Contains a single field
-- `message` (str) - The message to echo back
-
-### Observation
-**AgentboxObservation**: Contains the echo response and metadata
-- `echoed_message` (str) - The message echoed back
-- `message_length` (int) - Length of the message
-- `reward` (float) - Reward based on message length (length × 0.1)
-- `done` (bool) - Always False for echo environment
-- `metadata` (dict) - Additional info like step count
+- Type: `str`
+- Constraints:
+	- Non-empty
+	- Max length: 1000 chars
 
 ### Reward
-The reward is calculated as: `message_length × 0.1`
-- "Hi" → reward: 0.2
-- "Hello, World!" → reward: 1.3
-- Empty message → reward: 0.0
+- Range: `[-2.5, 1.0]`
+- Components:
+	- Task score (grader)
+	- `-0.02` step penalty
+	- `-2.0` destructive penalty
 
-## Advanced Usage
+## 🧪 Tasks & Difficulty
 
-### Connecting to an Existing Server
+### 🟢 Easy — Lint Fix
+- Goal: Fix syntax errors
+- Grader: `ast.parse()`
+- Output: `0.0` or `1.0`
 
-If you already have a Agentbox environment server running, you can connect directly:
+### 🟡 Medium — Vulnerability Patch
+- Goal: Remove unsafe calls (`eval`, `exec`, etc.)
+- Checks:
+	- Unsafe calls removed
+	- Function structure preserved
+- Output: `0.0 – 1.0`
 
-```python
-from AgentBox import AgentboxEnv
+### 🔴 Hard — Refactor + Type Hints
+- Goal: Improve structure + add typing
+- Checks:
+	- Structural preservation
+	- Type annotations present
+- Output: `0.0 – 1.0`
 
-# Connect to existing server
-AgentBoxenv = AgentboxEnv(base_url="<ENV_HTTP_URL_HERE>")
+## ⚙️ Setup & Usage
 
-# Use as normal
-result = AgentBoxenv.reset()
-result = AgentBoxenv.step(AgentboxAction(message="Hello!"))
+### Install Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-Note: When connecting to an existing server, `AgentBoxenv.close()` will NOT stop the server.
-
-### Using the Context Manager
-
-The client supports context manager usage for automatic connection management:
-
-```python
-from AgentBox import AgentboxAction, AgentboxEnv
-
-# Connect with context manager (auto-connects and closes)
-with AgentboxEnv(base_url="http://localhost:8000") as env:
-    result = env.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-    # Multiple steps with low latency
-    for msg in ["Hello", "World", "!"]:
-        result = env.step(AgentboxAction(message=msg))
-        print(f"Echoed: {result.observation.echoed_message}")
+### Run API Server
+```bash
+uvicorn src.env:app --host 0.0.0.0 --port 7860
 ```
 
-The client uses WebSocket connections for:
-- **Lower latency**: No HTTP connection overhead per request
-- **Persistent session**: Server maintains your environment state
-- **Efficient for episodes**: Better for many sequential steps
-
-### Concurrent WebSocket Sessions
-
-The server supports multiple concurrent WebSocket connections. To enable this,
-modify `server/app.py` to use factory mode:
-
-```python
-# In server/app.py - use factory mode for concurrent sessions
-app = create_app(
-    AgentboxEnvironment,  # Pass class, not instance
-    AgentboxAction,
-    AgentboxObservation,
-    max_concurrent_envs=4,  # Allow 4 concurrent sessions
-)
+### Run Inference Loop
+```bash
+export HF_TOKEN=your_token
+python inference.py
 ```
 
-Then multiple clients can connect simultaneously:
+## 📊 Baseline Scores (Mock)
 
-```python
-from AgentBox import AgentboxAction, AgentboxEnv
-from concurrent.futures import ThreadPoolExecutor
+| Task | Score |
+|---|---:|
+| Easy | 0.88 |
+| Medium | 0.71 |
+| Hard | 0.54 |
 
-def run_episode(client_id: int):
-    with AgentboxEnv(base_url="http://localhost:8000") as env:
-        result = env.reset()
-        for i in range(10):
-            result = env.step(AgentboxAction(message=f"Client {client_id}, step {i}"))
-        return client_id, result.observation.message_length
+Model: `gpt-4.1-mini`
 
-# Run 4 episodes concurrently
-with ThreadPoolExecutor(max_workers=4) as executor:
-    results = list(executor.map(run_episode, range(4)))
-```
+## 🧪 Testing
 
-## Development & Testing
-
-### Direct Environment Testing
-
-Test the environment logic directly without starting the HTTP server:
+Run validation tests:
 
 ```bash
-# From the server directory
-python3 server/AgentBox_environment.py
+pytest tests/
 ```
 
-This verifies that:
-- Environment resets correctly
-- Step executes actions properly
-- State tracking works
-- Rewards are calculated correctly
-
-### Running Locally
-
-Run the server locally for development:
-
-```bash
-uvicorn server.app:app --reload
-```
-
-## Project Structure
-
-```
-AgentBox/
-├── .dockerignore         # Docker build exclusions
-├── __init__.py            # Module exports
-├── README.md              # This file
-├── openenv.yaml           # OpenEnv manifest
-├── pyproject.toml         # Project metadata and dependencies
-├── uv.lock                # Locked dependencies (generated)
-├── client.py              # AgentboxEnv client
-├── models.py              # Action and Observation models
-└── server/
-    ├── __init__.py        # Server module exports
-    ├── AgentBox_environment.py  # Core environment logic
-    ├── app.py             # FastAPI application (HTTP + WebSocket endpoints)
-    └── Dockerfile         # Container image definition
-```
+## 📌 Notes
+- All graders are deterministic & stateless
+- Execution time per grading <50ms
+- No randomness in reward or evaluation

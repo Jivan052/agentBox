@@ -1,0 +1,2 @@
+[console_scripts]
+server = AgentBox.server.app:main

@@ -23,20 +23,62 @@ def _safe_str(value: Optional[str]) -> str:
     return str(value)
 
 
+def _get_api_key() -> str:
+    # Submission-required variable first, with compatibility fallbacks.
+    for name in ("HF_TOKEN", "API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
+        value = os.getenv(name)
+        if value:
+            return value
+    raise ValueError(
+        "Missing API key. Set one of: HF_TOKEN, API_KEY, GEMINI_API_KEY, OPENAI_API_KEY"
+    )
+
+
+def _resolve_base_url(api_key: str) -> str:
+    explicit_base_url = os.getenv("API_BASE_URL") or os.getenv("BASE_URL")
+    if explicit_base_url:
+        return explicit_base_url
+
+    # Default should reflect active inference setup for submission.
+    # Keep provider-aware fallback behavior.
+    if api_key.startswith("hf_"):
+        return "https://router.huggingface.co/v1"
+    if api_key.startswith("AIza"):
+        return "https://generativelanguage.googleapis.com/v1beta/openai"
+    return "https://router.huggingface.co/v1"
+
+
+def _resolve_model(base_url: str) -> str:
+    explicit_model = os.getenv("MODEL_NAME") or os.getenv("MODEL")
+    if explicit_model:
+        return explicit_model
+
+    if "router.huggingface.co" in base_url:
+        return "Qwen/Qwen2.5-72B-Instruct"
+    if "generativelanguage.googleapis.com" in base_url:
+        return "gemini-1.5-flash"
+    return "gpt-4.1-mini"
+
+
+def _clamp_score(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
 def main() -> None:
     success: bool = False
     rewards: List[float] = []
     step_count: int = 0
+    score: float = 0.0
 
     try:
         # --- ENV VARS ---
-        hf_token: str = _get_env_var("HF_TOKEN", required=True)
-        base_url: str = _get_env_var("BASE_URL", "https://api.openai.com/v1")
-        model: str = _get_env_var("MODEL", "gpt-4.1-mini")
+        api_key: str = _get_api_key()
+        base_url: str = _resolve_base_url(api_key)
+        model: str = _resolve_model(base_url)
         task_name: str = _get_env_var("TASK", "easy")
 
         # --- CLIENT INIT ---
-        client = OpenAI(base_url=base_url, api_key=hf_token)
+        client = OpenAI(base_url=base_url, api_key=api_key)
 
         # --- ENV INIT ---
         env = CodeGuardEnv()
@@ -83,19 +125,25 @@ def main() -> None:
 
             state = next_state
 
+            # Keep score in [0, 1] for validator compatibility.
+            score = _clamp_score(float(state.get("score", 0.0)))
+
             # Success condition
             if done and reward >= env.threshold:
                 success = True
 
         # --- END LOG ---
         reward_str = ",".join(f"{r:.2f}" for r in rewards)
-        print(f"[END] success={_format_bool(success)} steps={step_count} rewards={reward_str}")
+        print(
+            f"[END] success={_format_bool(success)} steps={step_count} "
+            f"score={score:.2f} rewards={reward_str}"
+        )
 
     except Exception as e:
         # Ensure END always prints
         _ = str(e)
         reward_str = ",".join(f"{r:.2f}" for r in rewards) if rewards else "0.00"
-        print(f"[END] success=false steps={step_count} rewards={reward_str}")
+        print(f"[END] success=false steps={step_count} score=0.00 rewards={reward_str}")
 
 
 if __name__ == "__main__":

@@ -91,3 +91,8 @@ def step(action: str) -> Dict[str, Any]:
         "done": done,
         "info": info,
     }
+
+
+@app.get("/state")
+def state() -> Dict[str, Any]:
+    return env_instance.state

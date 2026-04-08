@@ -1,8 +1,7 @@
-env:
-  name: codeguard
-  version: 0.1
-
-limits:
-  max_steps: 50
-  timeout_ms: 50
+spec_version: 1
+name: codeguard
+type: space
+runtime: fastapi
+app: src.env:app
+port: 7860
 

@@ -1,0 +1,6 @@
+spec_version: 1
+name: codeguard
+type: space
+runtime: fastapi
+app: AgentBox.src.env:app
+port: 7860

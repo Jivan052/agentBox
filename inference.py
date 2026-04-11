@@ -6,15 +6,13 @@ from openai import OpenAI
 
 
 # Required submission variables.
-# Defaults are provided only for API_BASE_URL and MODEL_NAME.
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+# Keep HF_TOKEN/LOCAL_IMAGE_NAME defined for checklist compatibility,
+# but API calls must use API_BASE_URL + API_KEY injected by validator.
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-
-
-# Compatibility fallback. HF_TOKEN remains the primary required variable.
-API_KEY = HF_TOKEN or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
 
 TASK_NAME = os.getenv("TASK", "easy")
 BENCHMARK = os.getenv("BENCHMARK", "codeguard")
@@ -54,13 +52,11 @@ def main() -> None:
     try:
         client = None
         init_error: Optional[str] = None
-        if API_KEY:
-            try:
-                client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-            except Exception as exc:
-                init_error = str(exc)
-        else:
-            init_error = "Missing HF_TOKEN (or API_KEY)"
+        try:
+            # Mandatory: all LLM calls through injected LiteLLM proxy.
+            client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+        except Exception as exc:
+            init_error = str(exc)
 
         env = CodeGuardEnv()
         state: Dict[str, Any] = env.reset()

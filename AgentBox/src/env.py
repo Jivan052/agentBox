@@ -24,11 +24,20 @@ class CodeGuardEnv:
         # Strict score interval for validator compatibility.
         return max(0.01, min(0.99, base_score))
 
+    def _get_all_task_scores(self, action: str) -> Dict[str, float]:
+        scores: Dict[str, float] = {}
+        for key, grader in GRADERS.items():
+            score = float(grader(action))
+            scores[key] = max(0.01, min(0.99, score))
+        return scores
+
     def reset(self) -> Dict[str, Any]:
         self.state = {
-            "score": 0.0,
+            "score": 0.01,
             "history": [],
             "task": TASKS[self.task_key],
+            "tasks": list(TASKS.values()),
+            "task_scores": {k: 0.01 for k in GRADERS.keys()},
         }
         self.current_step = 0
         self.done = False
@@ -59,7 +68,8 @@ class CodeGuardEnv:
 
         reward: float = compute_reward(self.state, action, base_score)
 
-        self.state["score"] = reward
+        self.state["score"] = max(0.01, min(0.99, base_score))
+        self.state["task_scores"] = self._get_all_task_scores(action)
         self.state["history"].append(
             {
                 "step": self.current_step,

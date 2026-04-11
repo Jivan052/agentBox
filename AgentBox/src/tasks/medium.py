@@ -11,6 +11,8 @@ def get_task() -> Dict:
     return {
         "name": "vuln_patch",
         "description": "Remove unsafe function usage while preserving functionality.",
+        "grader": "grade",
+        "score_range": [MIN_TASK_SCORE, MAX_TASK_SCORE],
     }
 
 

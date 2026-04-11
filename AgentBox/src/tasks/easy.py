@@ -10,6 +10,8 @@ def get_task() -> Dict:
     return {
         "name": "lint_fix",
         "description": "Fix syntax errors in the given Python code.",
+        "grader": "grade",
+        "score_range": [MIN_TASK_SCORE, MAX_TASK_SCORE],
     }
 
 

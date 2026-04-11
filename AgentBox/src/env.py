@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from typing import Any, Dict, Tuple
+import os
 
 from src.reward import compute_reward
+from src.tasks import GRADERS, TASKS
 
 app = FastAPI()
 
@@ -13,11 +15,20 @@ class CodeGuardEnv:
         self.max_steps: int = 50
         self.threshold: float = 0.95
         self.done: bool = False
+        requested_task = os.getenv("TASK", "easy").strip().lower()
+        self.task_key: str = requested_task if requested_task in GRADERS else "easy"
+
+    def _get_task_score(self, action: str) -> float:
+        grader = GRADERS[self.task_key]
+        base_score = float(grader(action))
+        # Strict score interval for validator compatibility.
+        return max(0.01, min(0.99, base_score))
 
     def reset(self) -> Dict[str, Any]:
         self.state = {
             "score": 0.0,
             "history": [],
+            "task": TASKS[self.task_key],
         }
         self.current_step = 0
         self.done = False
@@ -44,7 +55,7 @@ class CodeGuardEnv:
             self.done = True
             return self.state, -1.0, True, {"error": "invalid_action"}
 
-        base_score: float = 1.0 if "fix" in action.lower() else 0.0
+        base_score: float = self._get_task_score(action)
 
         reward: float = compute_reward(self.state, action, base_score)
 

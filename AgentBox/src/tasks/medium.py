@@ -3,6 +3,8 @@ import ast
 
 
 UNSAFE_FUNCTIONS = {"eval", "exec", "compile", "__import__"}
+MIN_TASK_SCORE = 0.01
+MAX_TASK_SCORE = 0.99
 
 
 def get_task() -> Dict:
@@ -36,7 +38,7 @@ def grade(candidate_code: str) -> float:
     try:
         tree = ast.parse(candidate_code)
     except SyntaxError:
-        return 0.0
+        return MIN_TASK_SCORE
 
     visitor = UnsafeCallVisitor()
     visitor.visit(tree)
@@ -49,4 +51,6 @@ def grade(candidate_code: str) -> float:
     if _has_function_def(tree):
         score += 0.3
 
-    return round(score, 2)
+    score = round(score, 2)
+    score = max(MIN_TASK_SCORE, min(MAX_TASK_SCORE, score))
+    return score

@@ -2,6 +2,10 @@ from typing import Dict
 import ast
 
 
+MIN_TASK_SCORE = 0.01
+MAX_TASK_SCORE = 0.99
+
+
 def get_task() -> Dict:
     return {
         "name": "refactor_types",
@@ -39,7 +43,7 @@ def grade(candidate_code: str) -> float:
     try:
         tree = ast.parse(candidate_code)
     except SyntaxError:
-        return 0.0
+        return MIN_TASK_SCORE
 
     score = 0.0
 
@@ -49,4 +53,6 @@ def grade(candidate_code: str) -> float:
     if _count_type_hints(tree) > 0:
         score += 0.5
 
-    return round(score, 2)
+    score = round(score, 2)
+    score = max(MIN_TASK_SCORE, min(MAX_TASK_SCORE, score))
+    return score

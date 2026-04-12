@@ -103,6 +103,26 @@ def reset() -> Dict[str, Any]:
     return env_instance.reset()
 
 
+@app.get("/tasks")
+def tasks() -> Dict[str, Any]:
+    return {
+        "count": len(TASKS),
+        "tasks": list(TASKS.values()),
+        "graders": sorted(GRADERS.keys()),
+    }
+
+
+@app.post("/grade")
+def grade(task_id: str, candidate_code: str) -> Dict[str, Any]:
+    key = task_id.strip().lower()
+    if key not in GRADERS:
+        return {"error": "unknown_task", "task_id": task_id}
+
+    score = float(GRADERS[key](candidate_code))
+    score = max(0.01, min(0.99, score))
+    return {"task_id": key, "score": score}
+
+
 @app.post("/step")
 def step(action: str) -> Dict[str, Any]:
     state, reward, done, info = env_instance.step(action)

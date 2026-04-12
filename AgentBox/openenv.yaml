@@ -5,16 +5,16 @@ runtime: fastapi
 app: src.env:app
 port: 7860
 tasks:
-	- id: easy_task
-		name: Easy Task
-		difficulty: easy
-		grader: server.graders:EasyGrader
-	- id: medium_task
-		name: Medium Task
-		difficulty: medium
-		grader: server.graders:MediumGrader
-	- id: hard_task
-		name: Hard Task
-		difficulty: hard
-		grader: server.graders:HardGrader
+  - id: easy
+    name: Easy Task
+    difficulty: easy
+    grader: server.graders:EasyGrader
+  - id: medium
+    name: Medium Task
+    difficulty: medium
+    grader: server.graders:MediumGrader
+  - id: hard
+    name: Hard Task
+    difficulty: hard
+    grader: server.graders:HardGrader
 

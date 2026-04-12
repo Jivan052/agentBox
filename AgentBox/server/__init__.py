@@ -6,6 +6,11 @@
 
 """Agentbox environment server components."""
 
-from .AgentBox_environment import AgentboxEnvironment
+try:
+	from .AgentBox_environment import AgentboxEnvironment
+except Exception:  # pragma: no cover
+	# Keep package importable for tools that only need sibling modules
+	# such as `server.graders` during validation.
+	AgentboxEnvironment = None  # type: ignore[assignment]
 
 __all__ = ["AgentboxEnvironment"]

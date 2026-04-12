@@ -8,9 +8,12 @@ MAX_TASK_SCORE = 0.99
 
 def get_task() -> Dict:
     return {
+        "id": "hard",
+        "difficulty": "hard",
         "name": "refactor_types",
+        "objective": "Preserve core structure and add meaningful type annotations.",
         "description": "Refactor code and add type hints.",
-        "grader": "grade",
+        "grader_name": "grade",
         "score_range": [MIN_TASK_SCORE, MAX_TASK_SCORE],
     }
 

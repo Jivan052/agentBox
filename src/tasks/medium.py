@@ -9,9 +9,12 @@ MAX_TASK_SCORE = 0.99
 
 def get_task() -> Dict:
 	return {
+		"id": "medium",
+		"difficulty": "medium",
 		"name": "vuln_patch",
+		"objective": "Remove unsafe calls while preserving function structure.",
 		"description": "Remove unsafe function usage while preserving functionality.",
-		"grader": "grade",
+		"grader_name": "grade",
 		"score_range": [MIN_TASK_SCORE, MAX_TASK_SCORE],
 	}
 

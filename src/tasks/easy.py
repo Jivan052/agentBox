@@ -8,9 +8,12 @@ MAX_TASK_SCORE = 0.99
 
 def get_task() -> Dict:
 	return {
+		"id": "easy",
+		"difficulty": "easy",
 		"name": "lint_fix",
+		"objective": "Fix syntax errors so the candidate code parses successfully.",
 		"description": "Fix syntax errors in the given Python code.",
-		"grader": "grade",
+		"grader_name": "grade",
 		"score_range": [MIN_TASK_SCORE, MAX_TASK_SCORE],
 	}
 

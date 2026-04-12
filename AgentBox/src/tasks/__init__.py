@@ -17,3 +17,21 @@ GRADERS: Dict[str, Callable[[str], float]] = {
 	"hard": hard_grade,
 }
 
+# Canonical easy->medium->hard ordered tasks for validator discovery.
+TASK_SEQUENCE = ["easy", "medium", "hard"]
+
+# Explicit task/grader pairs with callable graders.
+TASKS_WITH_GRADERS = [
+	{
+		"id": key,
+		"difficulty": TASKS[key].get("difficulty", key),
+		"task": TASKS[key],
+		"grader": GRADERS[key],
+	}
+	for key in TASK_SEQUENCE
+]
+
+
+def list_tasks_with_graders():
+	return TASKS_WITH_GRADERS
+

@@ -16,3 +16,19 @@ GRADERS: Dict[str, Callable[[str], float]] = {
 	"medium": medium_grade,
 	"hard": hard_grade,
 }
+
+TASK_SEQUENCE = ["easy", "medium", "hard"]
+
+TASKS_WITH_GRADERS = [
+	{
+		"id": key,
+		"difficulty": TASKS[key].get("difficulty", key),
+		"task": TASKS[key],
+		"grader": GRADERS[key],
+	}
+	for key in TASK_SEQUENCE
+]
+
+
+def list_tasks_with_graders():
+	return TASKS_WITH_GRADERS
